@@ -1,0 +1,98 @@
+// Decompiled by DJ v3.7.7.81 Copyright 2004 Atanas Neshkov  Date: 2009-3-21 22:17:36
+// Home Page : http://members.fortunecity.com/neshkov/dj.html  - Check often for new version!
+// Decompiler options: packimports(3) 
+// Source File Name:   MessageConsumerBean.java
+
+package com.shenghao.arch.mdb;
+
+import com.shenghao.arch.action.BaseAction;
+import com.shenghao.arch.event.Event;
+import com.shenghao.arch.event.EventResponse;
+import com.shenghao.arch.manage.syslog.*;
+import com.shenghao.arch.util.SysTrace;
+import com.shenghao.arch.util.mail.MailData;
+import com.shenghao.arch.util.mail.MailSender;
+import javax.ejb.*;
+import javax.jms.*;
+
+public class MessageConsumerBean
+    implements MessageDrivenBean, MessageListener
+{
+
+    public MessageConsumerBean()
+    {
+    }
+
+    public void ejbCreate()
+        throws CreateException
+    {
+    }
+
+    public void ejbRemove()
+    {
+    }
+
+    public void onMessage(Message msg)
+    {
+        SysTrace.debug("in MessageConsumer.onMessage()");
+        TextMessage txtMsg = null;
+        ObjectMessage objMsg = null;
+        String messageType = null;
+        try
+        {
+            if(msg instanceof TextMessage)
+            {
+                SysTrace.debug("TextMessage");
+                txtMsg = (TextMessage)msg;
+                SysTrace.info("MESSAGE BEAN: Message received: " + txtMsg.getText());
+            } else
+            if(msg instanceof ObjectMessage)
+            {
+                SysTrace.debug("ObjectMessage");
+                objMsg = (ObjectMessage)msg;
+                EventResponse eventResponse = new EventResponse();
+                if(objMsg.getObject() instanceof Event)
+                {
+                    SysTrace.debug("Message received : Event");
+                    Event event = (Event)objMsg.getObject();
+                    String actionName = event.getAction();
+                    BaseAction action = null;
+                    action = (BaseAction)Class.forName(actionName).newInstance();
+                    eventResponse = action.perform(event);
+                } else
+                if(objMsg.getObject() instanceof Syslog)
+                {
+                    SysTrace.debug("Message received : Syslog");
+                    SyslogDAO dao = SyslogDAOFactory.getDAO();
+                    dao.writelog((Syslog)objMsg.getObject());
+                } else
+                if(objMsg.getObject() instanceof MailData)
+                {
+                    SysTrace.debug("Message received : MailData");
+                    MailSender.sendMail((MailData)objMsg.getObject());
+                } else
+                {
+                    SysTrace.debug("unknown Object type");
+                }
+            } else
+            {
+                SysTrace.info("Message of wrong type: " + msg.getClass().getName());
+            }
+        }
+        catch(JMSException fe)
+        {
+            SysTrace.error("Error at onMessage():" + fe.getMessage());
+        }
+        catch(Exception fe)
+        {
+            SysTrace.error("Error at onMessage():" + fe.getMessage());
+        }
+    }
+
+    public void setMessageDrivenContext(MessageDrivenContext messageDrivenContext)
+    {
+        this.messageDrivenContext = messageDrivenContext;
+    }
+
+    MessageDrivenContext messageDrivenContext;
+}

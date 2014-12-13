@@ -1,0 +1,68 @@
+// Decompiled by DJ v3.7.7.81 Copyright 2004 Atanas Neshkov  Date: 2008-09-01 16:59:41
+// Home Page : http://members.fortunecity.com/neshkov/dj.html  - Check often for new version!
+// Decompiler options: packimports(3) 
+// Source File Name:   FindUserListAction.java
+
+package com.zagerbone.user;
+
+import com.shenghao.arch.action.BaseActionSupport;
+import com.shenghao.arch.event.Event;
+import com.shenghao.arch.event.EventResponse;
+import com.shenghao.arch.exception.BussinessProcessException;
+import com.zagerbone.util.Query;
+import java.util.HashMap;
+
+// Referenced classes of package com.zagerbone.user:
+//            UserDAOFactory, UserDAO
+
+public class FindUserListAction extends BaseActionSupport
+{
+
+    public FindUserListAction()
+    {
+    }
+
+    public EventResponse perform(Event evt)
+    {
+        UserDAO dao = UserDAOFactory.getDAO();
+        EventResponse returnValue = new EventResponse();
+        try
+        {
+            Query queryCon = (Query)processEvent(evt);
+            Query outQuery = dao.findUserList(queryCon);
+            returnValue.setSuccessFlag(true);
+            returnValue.setBody(outQuery);
+        }
+        catch(Exception me)
+        {
+            returnValue.setSuccessFlag(false);
+            returnValue.setErrorCode("601");
+            returnValue.setErrorMessage(me.getMessage());
+        }
+        return returnValue;
+    }
+
+    public Object processEvent(Event evt)
+        throws BussinessProcessException
+    {
+        HashMap hashBody = evt.getBody();
+        Query queryCondition = new Query();
+        String strPage = (String)hashBody.get("page");
+        String strRowsperpage = (String)hashBody.get("rowsperpage");
+        String strTotal = (String)hashBody.get("total");
+        String queryString = (String)hashBody.get("queryString");
+        queryString = "fid=" + evt.getFunctionID() + queryString;
+        if(strPage == null || strPage.equals(""))
+            strPage = "1";
+        if(strRowsperpage == null || strRowsperpage.equals(""))
+            strRowsperpage = "25";
+        if(strTotal == null || strTotal.equals(""))
+            strTotal = "0";
+        queryCondition.setCurrentPageNum(Integer.parseInt(strPage));
+        queryCondition.setRowsPerPage(Integer.parseInt(strRowsperpage));
+        queryCondition.setTotalNum(Integer.parseInt(strTotal));
+        queryCondition.setQueryString(queryString);
+        queryCondition.setConditionBody(hashBody);
+        return queryCondition;
+    }
+}

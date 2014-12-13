@@ -1,0 +1,86 @@
+// Decompiled by DJ v3.7.7.81 Copyright 2004 Atanas Neshkov  Date: 2009-3-21 22:16:02
+// Home Page : http://members.fortunecity.com/neshkov/dj.html  - Check often for new version!
+// Decompiler options: packimports(3) 
+// Source File Name:   MenuDAOImpl.java
+
+package com.shenghao.arch.manage.menu;
+
+import com.shenghao.arch.baseobject.BasicObject;
+import com.shenghao.arch.exception.BussinessProcessException;
+import com.shenghao.arch.util.*;
+import java.sql.ResultSetMetaData;
+import java.util.HashMap;
+import java.util.Hashtable;
+import sun.jdbc.rowset.CachedRowSet;
+
+// Referenced classes of package com.shenghao.arch.manage.menu:
+//            Menu, MenuDAO
+
+public class MenuDAOImpl extends BasicObject
+    implements MenuDAO
+{
+
+    public MenuDAOImpl()
+    {
+    }
+
+    public Menu buildMenu(HashMap body)
+        throws BussinessProcessException
+    {
+        DBTransUtil transUtil = new DBTransUtil();
+        Menu menu = new Menu();
+        CachedRowSet crs = null;
+        CachedRowSet barSet = null;
+        Hashtable menus = new Hashtable(1);
+        Hashtable bars = new Hashtable(1);
+        String userid = Tools.nvl((String)body.get("userid"));
+        StringBuffer strSql = new StringBuffer("select * from v_menus where userid = '");
+        strSql.append(userid).append("' and substr(menuid,3,2)<>'00'");
+        SysTrace.info(strSql.toString());
+        try
+        {
+            crs = transUtil.getResultBySelect(strSql.toString());
+            ResultSetMetaData md = crs.getMetaData();
+            if(crs != null && crs.size() != 0)
+            {
+                Menu theMenu;
+                for(; crs.next(); menus.put(crs.getString("menuid"), theMenu))
+                {
+                    theMenu = new Menu();
+                    for(int i = 1; i < md.getColumnCount(); i++)
+                    {
+                        SysTrace.info(md.getColumnName(i) + " = " + crs.getString(i));
+                        theMenu.setProp(md.getColumnName(i).toLowerCase(), crs.getString(i));
+                    }
+
+                }
+
+            } else
+            {
+                throw new BussinessProcessException("\u8BE5\u7528\u6237\u6CA1\u6709\u4EFB\u4F55\u6743\u9650\uFF01");
+            }
+            menu.setBody(menus);
+            strSql = new StringBuffer("select * from v_menus where userid = '");
+            strSql.append(userid).append("' and substr(menuid,3,2)='00'");
+            barSet = transUtil.getResultBySelect(strSql.toString());
+            if(barSet != null && barSet.size() != 0)
+            {
+                int i = 0;
+                Menu theBar;
+                for(; barSet.next(); bars.put(i + "", theBar))
+                {
+                    theBar = new Menu();
+                    theBar.setProp("menuid", barSet.getString("menuid"));
+                    theBar.setProp("menuname", barSet.getString("menuname"));
+                }
+
+            }
+            menu.setBars(bars);
+        }
+        catch(Exception fe)
+        {
+            throw new BussinessProcessException(fe.getMessage());
+        }
+        return menu;
+    }
+}

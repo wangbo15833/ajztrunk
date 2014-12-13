@@ -1,0 +1,52 @@
+// Decompiled by DJ v3.7.7.81 Copyright 2004 Atanas Neshkov  Date: 2009-3-21 22:15:45
+// Home Page : http://members.fortunecity.com/neshkov/dj.html  - Check often for new version!
+// Decompiler options: packimports(3) 
+// Source File Name:   BuildMenuAction.java
+
+package com.shenghao.arch.manage.menu;
+
+import com.shenghao.arch.action.BaseActionSupport;
+import com.shenghao.arch.event.Event;
+import com.shenghao.arch.event.EventResponse;
+import com.shenghao.arch.exception.BussinessProcessException;
+import java.util.HashMap;
+
+// Referenced classes of package com.shenghao.arch.manage.menu:
+//            MenuDAOFactory, MenuDAO
+
+public class BuildMenuAction extends BaseActionSupport
+{
+
+    public BuildMenuAction()
+    {
+    }
+
+    public EventResponse perform(Event evt)
+    {
+        EventResponse returnValue = new EventResponse();
+        MenuDAO dao = MenuDAOFactory.getDAO();
+        try
+        {
+            HashMap body = (HashMap)processEvent(evt);
+            Menu menu = dao.buildMenu(body);
+            returnValue.setSuccessFlag(true);
+            returnValue.setBody(menu);
+        }
+        catch(Exception fe)
+        {
+            returnValue.setErrorCode("601");
+            returnValue.setErrorMessage(fe.getMessage());
+            returnValue.setSuccessFlag(false);
+        }
+        return returnValue;
+    }
+
+    public Object processEvent(Event evt)
+        throws BussinessProcessException
+    {
+        HashMap body = new HashMap(1);
+        HashMap hashBody = evt.getBody();
+        body.put("userid", evt.getUserid());
+        return body;
+    }
+}
